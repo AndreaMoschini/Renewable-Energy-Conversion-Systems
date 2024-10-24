@@ -1,0 +1,16 @@
+ASSIGNMENT 1:
+DTU 10 MW turbine, look up its data on internet
+Static part: AVOID EVERY DYNAMIC IN HERE
+	- create probability distribution (in matlab you can display it as a histogram with a proper number of bins), then find the best parameters to fit it with a Weibull distribution
+	- assume constant rotation speed of the turbine, find the ideal pitch to have the best power production. This means that the peak in the energy will be exactly at the nominal power, NOT MORE NOT LESS (it will not have the consant power production zone).
+	- evaluate power loss at each speed due to rotor damping (proportional with rotation speed) and power dissipated due to joule losses. Assume steady state, so you can balance the powers (power extracted from wind minus mechanical losses as input) and estimate the power loss by using an equivalent circuit ONLY FOR THE Q AXIS (being steady state you can neglect ALL THE INDUCTIVE PART and look only at the resistive)
+	  You can calculate the produced torque from the dynamics equation, assuming steady state  you can neglect the term with the inertia and consider only the losses due to damping. With the torque you can calculate the current in the generator and then the losses.
+Dyamic part:
+	- see notes on ipad
+	- to impose a maximum change rate on the pitch change you can use the DYNAMIC SATURATION IN SIMULINK.
+	  It is suggested to use a fixed step solver and set an upper/lower bound on theta which is equal to the previous beta plus/minus the max change rate rescaled for the time step of the solver.
+	- to generate the "realistic wind" look up the short term wind statistic slides
+	- make sure to add the noise to the ANENOMETER, not to the dynamics block
+	- to add the dynamic model of the generator you can assume Id = 0 (consider only q), you can add the block right after to the speed controller.
+	  You will need an internal PID for the current.
+	  It s suggested to first test and tune the model of the generator on a separated sheet and then integrate it into the turbine.

@@ -66,7 +66,7 @@ V_end = V_co + 5; % final wind speed
 Vw_ramp = linspace(1.1*V_ci,V_end,length(time));
 
 Vw_timeseries = timeseries(Vw_ramp',time');
-omega_rotor_0 = omega_opt; % initial condition (initial rotor speed)
+omega_rotor_0 = 0.1; % initial condition (initial rotor speed)
 
 figure(2)
 hold on

@@ -1,6 +1,9 @@
 %% WT main
 clc; close all; clear all;
 
+addpath("Functions\");
+addpath("Models\");
+
 % Simulation time setup
 T_sim = 600;              % sim time [s]
 dT = 0.1;                     % fixed size time interval [s]
@@ -67,6 +70,8 @@ Vw_ramp = linspace(1.1*V_ci,V_end,length(time));
 
 Vw_timeseries = timeseries(Vw_ramp',time');
 omega_rotor_0 = 0.1; % initial condition (initial rotor speed)
+
+sim('stall_regulated_WT.slx');
 
 figure(2)
 hold on

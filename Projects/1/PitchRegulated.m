@@ -1,6 +1,9 @@
 %% WT main
 clc; close all; clear all;
 
+addpath("Functions\")
+addpath("Models\")
+
 % Simulation time setup
 T_sim = 600;              % sim time [s]
 dT = 0.1;                     % fixed size time interval [s]

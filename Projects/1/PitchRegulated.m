@@ -26,8 +26,6 @@ magnets_flux = 19.49;       % magnets flux [Wb]
 stat_resistance = 64e-3;    % stator resistance [ohm]
 
 
-
-
 %% POWER FACTOR MAP
 % The map is used only for visualizing the plot, in the model the fitting
 % formula is used for each time instant (NOT a look-up method)
@@ -106,6 +104,13 @@ Vw_ramp = linspace(1.1*V_ci,V_end,length(time));
 
 Vw_timeseries = timeseries(Vw_ramp',time');
 omega_rotor_0 = Vw_ramp(1)*lambda_opt/R_rotor; % initial condition (initial rotor speed)
+Noise_switch = 0;
+
+% Noise data, needed otherwise simulink throws an error. In this example
+% it is not used anyway
+
+noise_data = repelem(0, length(time));
+noise_timeseries = timeseries(noise_data, time');
 
 figure(2)
 hold on

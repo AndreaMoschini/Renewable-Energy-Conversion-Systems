@@ -110,7 +110,7 @@ Noise_switch = 0;
 % it is not used anyway
 
 noise_data = repelem(0, length(time));
-noise_timeseries = timeseries(noise_data, time');
+noise_timeseries = timeseries(noise_data', time');
 
 figure(2)
 hold on

@@ -25,11 +25,12 @@ pole_pairs = 320;           % poles pairs
 magnets_flux = 19.49;       % magnets flux [Wb]
 stat_resistance = 64e-3;    % stator resistance [ohm]
 
+
 %% Optimal parameters
 
 omega_opt = 0.776;
 
-
+Trated = P_rated/omega_opt;
 
 %% POWER PROFILE
 % Draw the power curve turbine. Under the cut-in speed the
@@ -73,7 +74,7 @@ omega_rotor_0 = omega_opt; % initial condition (initial rotor speed)
 
 %sim('stall_regulated_WT.slx');
 
-figure(2)
 hold on
 plot(out.V_w,out.P_gen/1e6,'k')  %data coming from simulink simulation
 plot(V_w,Pw/1e6,'r','linewidth',1.5)
+hold off

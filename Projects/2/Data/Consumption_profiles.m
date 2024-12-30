@@ -7,7 +7,7 @@ time = (0:60*24)'; % min
 flow_rate_consumption = 0*time; % l/min
 temperature_req = 0*time; % °C
 
-if season == 2 % winter
+if season == 1 % winter
 
     Tmains = 12; % ° C
 

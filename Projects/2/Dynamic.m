@@ -92,7 +92,7 @@ else % summer
 
 end
 
-figure(2)
+figure(1)
 ha(1)=subplot(2,1,1);
 hold on
 grid on
@@ -139,13 +139,16 @@ U = 4.3;            % [W / m^2K]
 a1 = 4.28;          % [W / m^2K] coefficients of heat loss
 a2 = 0.0064;        % [W / m^2K^2] coefficients of heat loss
 flow_rate = 64.2;   % [L/h] recommended flow rate
+effectiveness = 0.6;   % heat exchanger effectiveness
+tank_loss_coeff = 2.5; % [W/K] tank loss coefficient
+Thome = 18;         % [°C] room remperature
 
 c_joule = 4200; % J/(kg*K) water specific heat capacity
 c = c_joule/3600; % Wh/(kg*K) water specific heat capacity
 T_in = 30; % °C
 Tin = T_in + 273.15;   % K
 water_density = 1;     % [kg/L] water density, assumed constant
-m_dot = (flow_rate/3600)*water_density;    % [kg/s] mass flow rate
+m_dot = (flow_rate/60)*water_density;    % [kg/m] mass flow rate
 
 %% IRRADIATION CALCULATION
 
@@ -215,7 +218,7 @@ Hbt(Hbt<0) = 0;
 
 
 %Plots
-figure(1)
+figure(2)
 plot(time_sun, Ht, 'Color','b', 'LineStyle','-')
 hold on
 %plot(time, Hbt, 'Color','b', 'LineStyle','--')

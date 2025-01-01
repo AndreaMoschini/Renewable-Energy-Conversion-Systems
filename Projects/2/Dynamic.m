@@ -19,7 +19,7 @@ end
 
 
 % we will assume that maximum temperature during the day is reached at t=tmax 
-tmax = 14;
+tmax = 14*60;
 
 
 time = (0:60*24)'; % min
@@ -142,6 +142,7 @@ flow_rate = 64.2;   % [L/h] recommended flow rate
 effectiveness = 0.6;   % heat exchanger effectiveness
 tank_loss_coeff = 2.5; % [W/K] tank loss coefficient
 Thome = 18;         % [°C] room remperature
+Tank_volume = 200;     % [kg] tank content mass
 
 c_joule = 4200; % J/(kg*K) water specific heat capacity
 c = c_joule/3600; % Wh/(kg*K) water specific heat capacity
@@ -179,7 +180,14 @@ domega = omega(2)-omega(1);
 
 
 % ambient temperature profile
-Ta = (Tmax+Tmin)/2 +(Tmax-Tmin)/2*cos(2*pi/24*(time_sun-tmax)); % [°C] hourly ambient temperature
+Ta = (Tmax+Tmin)/2 +(Tmax-Tmin)/2*cos(2*pi/(24*60)*(time-tmax)); % [°C] hourly ambient temperature
+
+
+figure(2)
+plot(time, Ta)
+xlabel('Time [m]')
+ylabel('Temperature [°C]')
+title('Daily ambient temperature')
 
 
 % calculate the hourly irradiation values. The total irradiation for
@@ -211,14 +219,18 @@ Rt=cosThetai./cosThetaz;
 
 Hbt = (Bt.*Rt+Dt.*((1+cos(beta))/2)+((1-cos(beta))/2)*rho.*Ht)*1e6/(3600*dt); % [W/m^2] radiation (instantaneous power, function fo time)
 %Hbt(:, i) = (Bt(:, i).*Rt+Dt(:, i).*((1+cos(beta))/2)+((1-cos(beta))/2)*rho.*Ht(:, i))*1e6*dt/(3600); % [W/m^2] radiation (instantaneous power, function fo time)
-Hbt(1) = 0; Hbt(end) = 0;
+%Hbt(1) = 0; Hbt(end) = 0;
 Hbt(Hbt<0) = 0;
 % Hbt_(cosThetai<0 | cosThetaz<0)= 0;
+
+Irr = zeros(length(time), 1);
+Irr(time_sun) = Hbt;
+
 
 
 
 %Plots
-figure(2)
+figure(3)
 plot(time_sun, Ht, 'Color','b', 'LineStyle','-')
 hold on
 %plot(time, Hbt, 'Color','b', 'LineStyle','--')
@@ -232,24 +244,47 @@ title('Daily irradiation components ')
 hold off
 
 
-%Now calculate
+figure(4)
+plot(time, Irr)
+xlabel('Time [m]')
+ylabel('Irradiation [W/m^2]')
+title('Incident radiation on panel')
 
-eta = eta_zero - U * (T_in - Ta) ./ Hbt;
 
-ind = find(eta > 0);
+%% SIM
 
-%Total solar power on tilted panel
+I_timeseries = timeseries(Irr, time);
+Ta_timeseries = timeseries(Ta, time);
 
-solar_power = Hbt.*A;
+mu_timeseries = timeseries(flow_rate_consumption, time);
+Tu_timeseries = timeseries(temperature_req, time);
 
-collector_power = eta.*Hbt.*A;
-collector_power(collector_power<0) = 0;
-collector_power(isnan(collector_power)) = 0;
 
-%Knowing the power captured by the collector, the fluid flow rate (assumed constant at the recommended value) and
-%the specific heat, we can calculate the temperature change of the
-%fluid between the entrance and the exit of the collector. Keep in mind
-%that the time is expressed in hours, therefore we multiply the flow
-%rate by dt
 
-deltaT = collector_power/(flow_rate*dt*c);
+
+
+
+
+
+
+% %Now calculate
+% 
+% eta = eta_zero - U * (T_in - Ta) ./ Hbt;
+% 
+% ind = find(eta > 0);
+% 
+% %Total solar power on tilted panel
+% 
+% solar_power = Hbt.*A;
+% 
+% collector_power = eta.*Hbt.*A;
+% collector_power(collector_power<0) = 0;
+% collector_power(isnan(collector_power)) = 0;
+% 
+% %Knowing the power captured by the collector, the fluid flow rate (assumed constant at the recommended value) and
+% %the specific heat, we can calculate the temperature change of the
+% %fluid between the entrance and the exit of the collector. Keep in mind
+% %that the time is expressed in hours, therefore we multiply the flow
+% %rate by dt
+% 
+% deltaT = collector_power/(flow_rate*dt*c);

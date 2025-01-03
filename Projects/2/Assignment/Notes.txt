@@ -1,0 +1,3 @@
+STATIC PART:
+	- total Thermal energy yield = how much energy we extract from the collector in an entire year
+	- WE HAVE THE OUTPUT TEMPERATURE, find the optimal mass flow rate to obtain it

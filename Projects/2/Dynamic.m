@@ -4,7 +4,10 @@ close all;
 
 
 
-%% Consumption profiles
+
+
+
+% Consumption profiles
 
 
 % SELECT SEASON:
@@ -110,7 +113,7 @@ linkaxes(ha,'x')
 
 
 
-%% METEOROLOGICAL INPUT 
+% METEOROLOGICAL INPUT 
 lat=46.07; %latitude in deg
 az=0; % panel azimuth in deg (facing south)
 tilt=30; % tilt angle in deg
@@ -147,11 +150,19 @@ Tank_volume = 200;     % [kg] tank content mass
 c_joule = 4200; % J/(kg*K) water specific heat capacity
 c = c_joule/60; % W*min/(kg*K) water specific heat capacity
 T_in = 30; % °C
-Tin = T_in + 273.15;   % K
 water_density = 1;     % [kg/L] water density, assumed constant
 m_dot = (flow_rate/60)*water_density;    % [kg/min] mass flow rate
 
-%% IRRADIATION CALCULATION
+
+
+
+
+
+
+
+
+
+% IRRADIATION CALCULATION
 
 a_=0.409+0.5016*sin(omega_s-pi/3);
 b_=0.6609-0.4767*sin(omega_s-pi/3);
@@ -251,7 +262,7 @@ ylabel('Irradiation [W/m^2]')
 title('Incident radiation on panel')
 
 
-%% SIM
+% SIM setup
 
 I_timeseries = timeseries(Irr, time);
 Ta_timeseries = timeseries(Ta, time);
@@ -263,6 +274,258 @@ Ts0 = 30;       % [C] initial tank temperature
 % we assume that the input tempertature in the collector is the same as the
 % tank temperature
 Tin_0 = Ts0;     % [C] initial collector input temperature
+E_solar_0 = 0;
+E_load_0 = 0;
+E_boiler_0 = 0;
+E_request_0 = 0;
+
+%out = sim("Model\System_model.slx");
+
+
+%% SIM - n days
+
+% i separated E_load from E_request because E_load not always considers the
+% difference of temperature between the request and the mains.
+
+
+
+
+
+n_days = 5;
+
+time_long = (0:(length(time)*n_days -1))';
+Ts = zeros(length(time),n_days);
+Tin = zeros(length(time),n_days);
+Tout = zeros(length(time),n_days);
+E_boiler = zeros(length(time),n_days);
+E_solar = zeros(length(time),n_days);
+E_load = zeros(length(time),n_days);
+E_request = zeros(length(time),n_days);
+Q_boiler = zeros(length(time),n_days);
+Q_solar = zeros(length(time),n_days);
+Q_load = zeros(length(time),n_days);
+collector_pump = zeros(length(time),n_days);
+
+
+
+for i=1:n_days
+
+    out = sim("Model\System_model.slx");
+
+    Ts(:, i) = out.Ts;
+    Tin(:, i) = out.Tin;
+    Tout(:, i) = out.Tout;
+    E_boiler(:, i) = out.E_boiler;
+    E_solar(:, i) = out.E_solar;
+    E_load(:, i) = out.E_load;
+    E_request(:, i) = out.E_request;
+    Q_boiler(:, i) = out.Q_boiler;
+    Q_solar(:, i) = out.Q_solar;
+    Q_load(:, i) = out.Q_load;
+
+
+% put final conditions of previous simulation as initial conditions of next
+% simulation
+
+    Ts0 = out.Ts(end);
+    Tin_0 = out.Tin(end);
+    E_solar_0 = out.E_solar(end);
+    E_load_0 = out.E_load(end);
+    E_boiler_0 = out.E_boiler(end);
+    E_request_0 = out.E_request(end);
+
+end
+
+Ts = Ts(:);
+Tin = Tin(:);
+Tout = Tout(:);
+E_boiler = E_boiler(:);
+E_solar = E_solar(:);
+E_load = E_load(:);
+E_request = E_request(:);
+Q_boiler = Q_boiler(:);
+Q_solar = Q_solar(:);
+Q_load = Q_load(:);
+collector_pump = collector_pump(:);
+
+% Plots
+
+
+figure(5)
+plot(time_long, Ts, 'Color', 'g')
+hold on
+plot(time_long, Tin, 'Color', 'b')
+plot(time_long, Tout, 'Color', 'r')
+xlabel('Time [min]')
+ylabel('Temperature [°C]')
+title('Collector and Tank temperatures')
+legend('Tank', 'Collector IN', 'Collector OUT')
+hold off
+
+
+
+figure(6)
+plot(time_long, E_request, 'Color', 'g')
+hold on
+plot(time_long, E_load, 'Color', 'y')
+plot(time_long, E_boiler, 'Color', 'b')
+plot(time_long, E_solar, 'Color', 'r')
+xlabel('Time [min]')
+ylabel('Energy [W*min]')
+title('Energy share comparison')
+legend('Requested', 'Load', 'Boiler', 'Solar')
+hold off
+
+% if we look closely, E_request is almost the sum between E_boiler and
+% E_solar, representing the total energy requested by the whole system.
+% However if we start with the initial Ts at 30 C we see that there is
+% still a little part of energy missing in E_request to reach the sum of
+% E_boiler with E_solar.
+% This can be explained by the fact that in the tank model we have some
+% energy losses that however are not accounted for in the total requested
+% energy, but the solar+boiler energy still have to cover.
+% NB: solar+boiler energy is higher than request energy
+
+% If we cancel the tank evergy loss term we see that the trend inverts and
+% the boiler+solar energy is lower than the request energy.
+% This might be due to the fact that we are starting with Ts=30 C, which is
+% a bit higher than the value at which it settles after a few days.
+% If we have as initial Tsa lower value (like 22), we can see how
+% solar+boiler energy gets much closer to the requested energy.
+
+
+
+figure(7)
+plot(time_long, Q_load, 'Color', 'g')
+hold on
+plot(time_long, Q_boiler, 'Color', 'b')
+plot(time_long, Q_solar, 'Color', 'r')
+xlabel('Time [min]')
+ylabel('Power [W]')
+title('Power share comparison')
+legend('Load', 'Boiler', 'Solar')
+hold off
+
+
+% let's consider 2 energy inputs to the system (boiler and sun) and
+% calculate how much the solar energy covers this request
+eff = E_solar(end)/(E_solar(end)+E_boiler(end));
+
+
+disp(['The solar energy covers the ', num2str(eff*100),' % of the total requested energy in the season ', num2str(season)]);
+
+% NB: to find W*h instead of W*min, just divide the value by 60
+
+
+
+
+
+
+%% SIM - sensitivity plots
+
+
+
+n_days = 5;
+
+time_long = (0:(length(time)*n_days -1))';
+Ts = zeros(length(time),n_days);
+Tin = zeros(length(time),n_days);
+Tout = zeros(length(time),n_days);
+E_boiler = zeros(length(time),n_days);
+E_solar = zeros(length(time),n_days);
+E_load = zeros(length(time),n_days);
+E_request = zeros(length(time),n_days);
+Q_boiler = zeros(length(time),n_days);
+Q_solar = zeros(length(time),n_days);
+Q_load = zeros(length(time),n_days);
+collector_pump = zeros(length(time),n_days);
+
+
+
+for i=1:n_days
+
+    simIn = Simulink.SimulationInput("Model\System_model.slx");
+    simIn = simIn.setVariable("epsilon", (epsilon));
+    sinIn = simIn.setVariable("Tank_volume", (Tank_volume+0.2*Tank_volume));
+    out = sim(simIn);
+
+    Ts(:, i) = out.Ts;
+    Tin(:, i) = out.Tin;
+    Tout(:, i) = out.Tout;
+    E_boiler(:, i) = out.E_boiler;
+    E_solar(:, i) = out.E_solar;
+    E_load(:, i) = out.E_load;
+    E_request(:, i) = out.E_request;
+    Q_boiler(:, i) = out.Q_boiler;
+    Q_solar(:, i) = out.Q_solar;
+    Q_load(:, i) = out.Q_load;
+
+
+% put final conditions of previous simulation as initial conditions of next
+% simulation
+
+    Ts0 = out.Ts(end);
+    Tin_0 = out.Tin(end);
+    E_solar_0 = out.E_solar(end);
+    E_load_0 = out.E_load(end);
+    E_boiler_0 = out.E_boiler(end);
+    E_request_0 = out.E_request(end);
+
+end
+
+Ts = Ts(:);
+Tin = Tin(:);
+Tout = Tout(:);
+E_boiler = E_boiler(:);
+E_solar = E_solar(:);
+E_load = E_load(:);
+E_request = E_request(:);
+Q_boiler = Q_boiler(:);
+Q_solar = Q_solar(:);
+Q_load = Q_load(:);
+collector_pump = collector_pump(:);
+
+% Plots
+
+
+figure(5)
+plot(time_long, Ts, 'Color', 'g')
+hold on
+plot(time_long, Tin, 'Color', 'b')
+plot(time_long, Tout, 'Color', 'r')
+xlabel('Time [min]')
+ylabel('Temperature [°C]')
+title('Collector and Tank temperatures')
+legend('Tank', 'Collector IN', 'Collector OUT')
+hold off
+
+
+
+figure(6)
+plot(time_long, E_request, 'Color', 'g')
+hold on
+plot(time_long, E_load, 'Color', 'y')
+plot(time_long, E_boiler, 'Color', 'b')
+plot(time_long, E_solar, 'Color', 'r')
+xlabel('Time [min]')
+ylabel('Energy [W*min]')
+title('Energy share comparison')
+legend('Requested', 'Load', 'Boiler', 'Solar')
+hold off
+
+
+
+
+figure(7)
+plot(time_long, Q_load, 'Color', 'g')
+hold on
+plot(time_long, Q_boiler, 'Color', 'b')
+plot(time_long, Q_solar, 'Color', 'r')
+xlabel('Time [min]')
+ylabel('Power [W]')
+title('Power share comparison')
+legend('Load', 'Boiler', 'Solar')
+hold off
 
 
 
@@ -272,24 +535,77 @@ Tin_0 = Ts0;     % [C] initial collector input temperature
 
 
 
-% %Now calculate
-% 
-% eta = eta_zero - U * (T_in - Ta) ./ Hbt;
-% 
-% ind = find(eta > 0);
-% 
-% %Total solar power on tilted panel
-% 
-% solar_power = Hbt.*A;
-% 
-% collector_power = eta.*Hbt.*A;
-% collector_power(collector_power<0) = 0;
-% collector_power(isnan(collector_power)) = 0;
-% 
-% %Knowing the power captured by the collector, the fluid flow rate (assumed constant at the recommended value) and
-% %the specific heat, we can calculate the temperature change of the
-% %fluid between the entrance and the exit of the collector. Keep in mind
-% %that the time is expressed in hours, therefore we multiply the flow
-% %rate by dt
-% 
-% deltaT = collector_power/(flow_rate*dt*c);
+
+
+%% SIM - sensitivity analysis but automated
+
+% The simulation is still done over a few days to observe the influence of
+% some parameters
+
+% Parameters to change:
+epsilon = 0.6;   % heat exchanger effectiveness
+Tank_volume = 200;     % [kg] tank content mass
+
+
+
+% Reference
+
+eff_ref = parametric_analysis(epsilon, Tank_volume, time);
+
+% epsilon ref +- 10%
+
+eff_epsi1 = parametric_analysis((epsilon+0.1*epsilon), Tank_volume, time);
+eff_epsi2 = parametric_analysis((epsilon-0.1*epsilon), Tank_volume, time);
+
+% Tank volume +- 50%
+
+% eff_tank1 = parametric_analysis(epsilon, (Tank_volume+0.5*Tank_volume), time);
+% eff_tank2 = parametric_analysis(epsilon, (Tank_volume-0.5*Tank_volume), time);
+
+% since we are calculating the efficiency as rapporto between energies,
+% tank size doesn't matter i guess?
+
+
+
+% Temp min and max +- 10%
+
+T_min = Tmin + 0.1*Tmin;
+T_max = Tmax;
+Ta = (T_max+T_min)/2 +(T_max-T_min)/2*cos(2*pi/(24*60)*(time-tmax)); % [°C] hourly ambient temperature
+Ta_timeseries = timeseries(Ta, time);
+eff_Tmin1 = parametric_analysis(epsilon, Tank_volume, time);
+
+
+T_min = Tmin - 0.1*Tmin;
+T_max = Tmax;
+Ta = (T_max+T_min)/2 +(T_max-T_min)/2*cos(2*pi/(24*60)*(time-tmax)); % [°C] hourly ambient temperature
+Ta_timeseries = timeseries(Ta, time);
+eff_Tmin2 = parametric_analysis(epsilon, Tank_volume, time);
+
+
+T_min = Tmin;
+T_max = Tmax + 0.1*Tmax;
+Ta = (T_max+T_min)/2 +(T_max-T_min)/2*cos(2*pi/(24*60)*(time-tmax)); % [°C] hourly ambient temperature
+Ta_timeseries = timeseries(Ta, time);
+eff_Tmax1 = parametric_analysis(epsilon, Tank_volume, time);
+
+
+T_min = Tmin;
+T_max = Tmax - 0.1*Tmax;
+Ta = (T_max+T_min)/2 +(T_max-T_min)/2*cos(2*pi/(24*60)*(time-tmax)); % [°C] hourly ambient temperature
+Ta_timeseries = timeseries(Ta, time);
+eff_Tmax2 = parametric_analysis(epsilon, Tank_volume, time);
+
+
+%not showing tank size cause it doesn't matter
+names = ["epsilon -10%", "Tmax -10%", "Tmin -10%", "Ref", "Tmin +10%", "Tmax +10%", "epsilon +10%"];
+values = [eff_epsi2, eff_Tmax2, eff_Tmin2, eff_ref, eff_Tmin1, eff_Tmax1, eff_epsi1];
+
+%names = ["epsilon -10%", "Tmin -10%", "Tmax -10%", "Ref", "Tmax +10%", "Tmin +10%", "epsilon +10%"];
+%values = [eff_epsi2, eff_Tmin2, eff_Tmax2, eff_ref, eff_Tmax1, eff_Tmin1, eff_epsi1];
+
+figure(8)
+bar(names, values)
+xlabel('Parameter')
+ylabel('Efficiency')
+title('Sensitivity analysis')

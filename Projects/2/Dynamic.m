@@ -14,11 +14,11 @@ close all;
 %     1 = winter (15 january)
 %     2 = summmer (15 june)
 
-season = 1;
+season = 2;
 
-if (season ~= 1 || season ~= 2)
-    season = 1;
-end
+% if (season ~= 1 || season ~= 2)
+%     season = 1;
+% end
 
 
 % we will assume that maximum temperature during the day is reached at t=tmax 
@@ -427,6 +427,10 @@ disp(['The solar energy covers the ', num2str(eff*100),' % of the total requeste
 
 n_days = 5;
 
+
+
+% Sim 1
+
 time_long = (0:(length(time)*n_days -1))';
 Ts = zeros(length(time),n_days);
 Tin = zeros(length(time),n_days);
@@ -446,7 +450,7 @@ for i=1:n_days
 
     simIn = Simulink.SimulationInput("Model\System_model.slx");
     simIn = simIn.setVariable("epsilon", (epsilon));
-    sinIn = simIn.setVariable("Tank_volume", (Tank_volume+0.2*Tank_volume));
+    sinIn = simIn.setVariable("Tank_volume", (Tank_volume));
     out = sim(simIn);
 
     Ts(:, i) = out.Ts;
@@ -485,47 +489,176 @@ Q_solar = Q_solar(:);
 Q_load = Q_load(:);
 collector_pump = collector_pump(:);
 
+
+% Sim 2
+
+Ts2 = zeros(length(time),n_days);
+Tin2 = zeros(length(time),n_days);
+Tout2 = zeros(length(time),n_days);
+E_boiler2 = zeros(length(time),n_days);
+E_solar2 = zeros(length(time),n_days);
+E_load2 = zeros(length(time),n_days);
+E_request2 = zeros(length(time),n_days);
+Q_boiler2 = zeros(length(time),n_days);
+Q_solar2 = zeros(length(time),n_days);
+Q_load2 = zeros(length(time),n_days);
+collector_pump2 = zeros(length(time),n_days);
+
+
+
+Ts0 = 30;       % [C] initial tank temperature
+% we assume that the input tempertature in the collector is the same as the
+% tank temperature
+Tin_0 = Ts0;     % [C] initial collector input temperature
+E_solar_0 = 0;
+E_load_0 = 0;
+E_boiler_0 = 0;
+E_request_0 = 0;
+
+
+for i=1:n_days
+
+    simIn2 = Simulink.SimulationInput("Model\System_model.slx");
+%    simIn2 = simIn2.setVariable("epsilon", (epsilon));
+    sinIn2 = simIn2.setVariable("Tank_volume", (Tank_volume+1*Tank_volume));
+    out = sim(simIn2);
+
+    Ts2(:, i) = out.Ts;
+    Tin2(:, i) = out.Tin;
+    Tout2(:, i) = out.Tout;
+    E_boiler2(:, i) = out.E_boiler;
+    E_solar2(:, i) = out.E_solar;
+    E_load2(:, i) = out.E_load;
+    E_request2(:, i) = out.E_request;
+    Q_boiler2(:, i) = out.Q_boiler;
+    Q_solar2(:, i) = out.Q_solar;
+    Q_load2(:, i) = out.Q_load;
+
+
+% put final conditions of previous simulation as initial conditions of next
+% simulation
+
+    Ts0 = out.Ts(end);
+    Tin_0 = out.Tin(end);
+    E_solar_0 = out.E_solar(end);
+    E_load_0 = out.E_load(end);
+    E_boiler_0 = out.E_boiler(end);
+    E_request_0 = out.E_request(end);
+
+end
+
+Ts2 = Ts2(:);
+Tin2 = Tin2(:);
+Tout2 = Tout2(:);
+E_boiler2 = E_boiler2(:);
+E_solar2 = E_solar2(:);
+E_load2 = E_load2(:);
+E_request2 = E_request2(:);
+Q_boiler2 = Q_boiler2(:);
+Q_solar2 = Q_solar2(:);
+Q_load2 = Q_load2(:);
+collector_pump2 = collector_pump2(:);
+
+
+
+
+
+
+
+
+
 % Plots
 
 
-figure(5)
+figure(9)
 plot(time_long, Ts, 'Color', 'g')
 hold on
-plot(time_long, Tin, 'Color', 'b')
-plot(time_long, Tout, 'Color', 'r')
+plot(time_long, Ts2, 'Color', 'b')
 xlabel('Time [min]')
 ylabel('Temperature [°C]')
-title('Collector and Tank temperatures')
-legend('Tank', 'Collector IN', 'Collector OUT')
+title('Tank temperatures')
+legend('Reference', 'Test 2')
+hold off
+
+
+figure(10)
+plot(time_long, Tin, 'Color', 'g')
+hold on
+plot(time_long, Tin2, 'Color', 'b')
+xlabel('Time [min]')
+ylabel('Temperature [°C]')
+title('Collector input temperatures')
+legend('Reference', 'Test 2')
+hold off
+
+
+figure(11)
+plot(time_long, Tout, 'Color', 'g')
+hold on
+plot(time_long, Tout2, 'Color', 'b')
+xlabel('Time [min]')
+ylabel('Temperature [°C]')
+title('Collector output temperatures')
+legend('Reference', 'Test 2')
 hold off
 
 
 
-figure(6)
+figure(12)
 plot(time_long, E_request, 'Color', 'g')
 hold on
-plot(time_long, E_load, 'Color', 'y')
-plot(time_long, E_boiler, 'Color', 'b')
-plot(time_long, E_solar, 'Color', 'r')
+plot(time_long, E_request2, 'Color', 'y')
 xlabel('Time [min]')
 ylabel('Energy [W*min]')
-title('Energy share comparison')
-legend('Requested', 'Load', 'Boiler', 'Solar')
+title('Energy requested')
+legend('Reference', 'Test 2')
 hold off
 
 
-
-
-figure(7)
-plot(time_long, Q_load, 'Color', 'g')
+figure(13)
+plot(time_long, E_load, 'Color', 'g')
 hold on
-plot(time_long, Q_boiler, 'Color', 'b')
-plot(time_long, Q_solar, 'Color', 'r')
+plot(time_long, E_load2, 'Color', 'y')
 xlabel('Time [min]')
-ylabel('Power [W]')
-title('Power share comparison')
-legend('Load', 'Boiler', 'Solar')
+ylabel('Energy [W*min]')
+title('Energy')
+legend('Reference', 'Test 2')
 hold off
+
+
+figure(14)
+plot(time_long, E_boiler, 'Color', 'g')
+hold on
+plot(time_long, E_boiler2, 'Color', 'y')
+xlabel('Time [min]')
+ylabel('Energy [W*min]')
+title('Energy boiler')
+legend('Reference', 'Test 2')
+hold off
+
+
+figure(15)
+plot(time_long, E_solar, 'Color', 'g')
+hold on
+plot(time_long, E_solar2, 'Color', 'y')
+xlabel('Time [min]')
+ylabel('Energy [W*min]')
+title('Energy requested')
+legend('Reference', 'Test 2')
+hold off
+
+
+
+% figure(7)
+% plot(time_long, Q_load, 'Color', 'g')
+% hold on
+% plot(time_long, Q_boiler, 'Color', 'b')
+% plot(time_long, Q_solar, 'Color', 'r')
+% xlabel('Time [min]')
+% ylabel('Power [W]')
+% title('Power share comparison')
+% legend('Load', 'Boiler', 'Solar')
+% hold off
 
 
 

@@ -18,12 +18,18 @@ A_rotor = pi*R_rotor^2;     % rotor area [m2]
 V_rated = 11.4;               % rated wind speed [m/s]
 V_ci = 4;                   % cut-in wind speed [m/s]
 V_co = 25;
-Jeq = 1.56e8;                % equivalent inertia [kg*m2]
+J_rotor = 1.56e8;           % rotor inertia [kg*m2]
+J_generator = 4800;         % generator inertia [kg*m2]
+%Jeq = 1.56e8;                % equivalent inertia [kg*m2]
+Jeq = J_rotor+J_generator;    % equivalent inertia [kg*m2]
 b = 2e5;                  % damping (equivalent losses) coefficient [N*m*s/rad]
 P_rated = 10e6;             % rated power [W]
 pole_pairs = 320;           % poles pairs
 magnets_flux = 19.49;       % magnets flux [Wb]
 stat_resistance = 64e-3;    % stator resistance [ohm]
+switching_freq = 1000;      % [Hz] inverter switching freq
+switching_period = 1/switching_freq;    % [s] inverter switching period
+inductance = 1.8e-3;      % [H] inductance for both q and d axes
 
 
 %% POWER FACTOR MAP
